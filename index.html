@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="康復日記">
+  <link rel="apple-touch-icon" href="icon.png">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#F5F0EB">
+  <title>康復日記</title>
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: -apple-system, "PingFang HK", "Helvetica Neue", sans-serif;
+      background: #F5F0EB;
+      color: #3D3A39;
+      line-height: 1.5;
+      padding-bottom: env(safe-area-inset-bottom);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    :root {
+      --bg: #F5F0EB;
+      --card: #FFFFFF;
+      --text: #3D3A39;
+      --text-secondary: #8A8580;
+      --primary: #7C9A8E;
+      --primary-light: #E8F0EC;
+      --water: #4A90D9;
+      --water-bg: #EBF3FC;
+      --urine: #D4A853;
+      --urine-bg: #FDF5E0;
+      --symptom: #D97A6B;
+      --symptom-bg: #FCF0ED;
+      --border: #E8E4DF;
+      --shadow: 0 2px 12px rgba(0,0,0,0.06);
+      --radius: 16px;
+      --radius-sm: 12px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* ===== Layout ===== */
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px 16px calc(80px + var(--safe-bottom));
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ===== Header ===== */
+    .header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0 16px; padding-top: calc(8px + var(--safe-top));
+    }
+    .header h1 {
+      font-size: 22px; font-weight: 700; letter-spacing: 0.5px;
+    }
+    .header-date { font-size: 14px; color: var(--text-secondary); }
+
+    /* ===== Cards ===== */
+    .card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 16px 18px; margin-bottom: 12px;
+      box-shadow: var(--shadow);
+    }
+    .card-title {
+      font-size: 14px; font-weight: 600; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+
+    /* ===== Summary ===== */
+    .summary-grid {
+      display: flex; gap: 8px; margin-bottom: 16px;
+    }
+    .summary-item {
+      flex: 1; background: var(--card); border-radius: var(--radius-sm);
+      padding: 14px 10px; text-align: center; box-shadow: var(--shadow);
+    }
+    .summary-item .emoji { font-size: 24px; display: block; margin-bottom: 4px; }
+    .summary-item .value { font-size: 22px; font-weight: 700; }
+    .summary-item .label { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ===== Water Section ===== */
+    .water-progress {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+    }
+    .water-progress .count { font-size: 28px; font-weight: 700; color: var(--water); }
+    .water-progress .target { font-size: 14px; color: var(--text-secondary); }
+    .water-bar {
+      flex: 1; height: 12px; background: var(--water-bg); border-radius: 6px; overflow: hidden;
+    }
+    .water-bar-fill {
+      height: 100%; background: var(--water); border-radius: 6px;
+      transition: width 0.3s ease; width: 0%;
+    }
+    .water-btns { display: flex; gap: 8px; }
+    .water-btns button {
+      flex: 1; padding: 12px; border: none; border-radius: var(--radius-sm);
+      background: var(--water-bg); color: var(--water); font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .water-btns button:active { transform: scale(0.95); background: #D4E4F7; }
+    .water-btns button.small { font-size: 13px; }
+
+    /* ===== Urine Section ===== */
+    .urine-row {
+      display: flex; justify-content: space-between; align-items: center; padding: 6px 0;
+    }
+    .urine-row .count { font-size: 20px; font-weight: 600; color: var(--urine); }
+    .urine-btns { display: flex; gap: 8px; }
+    .urine-btns button {
+      padding: 10px 18px; border: none; border-radius: var(--radius-sm);
+      background: var(--urine-bg); color: var(--urine); font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .urine-btns button:active { transform: scale(0.95); background: #F5EBC4; }
+
+    /* ===== Symptom Section ===== */
+    .symptom-tags {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+    }
+    .symptom-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 8px 14px; border: none; border-radius: 20px;
+      background: var(--symptom-bg); color: var(--symptom); font-size: 14px;
+      cursor: pointer; transition: all 0.15s; font-weight: 500;
+    }
+    .symptom-tag:active { transform: scale(0.95); }
+    .symptom-tag.selected { background: var(--symptom); color: #fff; }
+    .symptom-tag .sev { font-size: 11px; opacity: 0.7; margin-left: 2px; }
+
+    /* ===== Timeline ===== */
+    .timeline { position: relative; }
+    .timeline::before {
+      content: ''; position: absolute; left: 16px; top: 8px; bottom: 8px;
+      width: 2px; background: var(--border);
+    }
+    .tl-item {
+      display: flex; align-items: flex-start; gap: 12px; padding: 6px 0;
+      position: relative;
+    }
+    .tl-icon {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0; position: relative; z-index: 1;
+    }
+    .tl-icon.water { background: var(--water-bg); }
+    .tl-icon.urine { background: var(--urine-bg); }
+    .tl-icon.symptom { background: var(--symptom-bg); }
+    .tl-body { flex: 1; min-width: 0; padding-top: 4px; }
+    .tl-time { font-size: 12px; color: var(--text-secondary); }
+    .tl-text { font-size: 15px; }
+    .tl-actions { display: flex; gap: 12px; margin-top: 2px; }
+    .tl-actions button {
+      border: none; background: none; font-size: 12px; color: var(--text-secondary);
+      cursor: pointer; padding: 2px 4px;
+    }
+    .tl-actions button:active { opacity: 0.5; }
+    .empty-state {
+      text-align: center; padding: 32px 0; color: var(--text-secondary); font-size: 14px;
+    }
+
+    /* ===== Symptom Modal ===== */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 100; justify-content: center; align-items: flex-end;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 480px;
+      padding: 20px 24px calc(32px + var(--safe-bottom));
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .modal-handle {
+      width: 36px; height: 4px; border-radius: 2px; background: #ddd;
+      margin: 0 auto 16px;
+    }
+    .modal h2 { font-size: 18px; margin-bottom: 16px; }
+    .modal .form-group { margin-bottom: 14px; }
+    .modal .form-group label { font-size: 14px; font-weight: 600; display: block; margin-bottom: 6px; }
+    .sev-select {
+      display: flex; gap: 8px;
+    }
+    .sev-btn {
+      width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border);
+      background: #fff; font-size: 18px; cursor: pointer; transition: all 0.15s;
+    }
+    .sev-btn:active { transform: scale(0.9); }
+    .sev-btn.selected { border-color: var(--symptom); background: var(--symptom-bg); }
+    .modal input[type="text"] {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 16px; outline: none; font-family: inherit;
+    }
+    .modal input[type="text"]:focus { border-color: var(--primary); }
+    .modal .btn-primary {
+      width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm);
+      background: var(--primary); color: #fff; font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .modal .btn-primary:active { opacity: 0.8; }
+    .modal .btn-cancel {
+      width: 100%; padding: 12px; border: none; background: none;
+      color: var(--text-secondary); font-size: 15px; cursor: pointer; margin-top: 8px;
+    }
+
+    /* ===== Bottom Tabs ===== */
+    .tabs {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      padding-bottom: var(--safe-bottom);
+    }
+    .tabs-inner {
+      display: flex; max-width: 480px; margin: 0 auto;
+    }
+    .tab-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 0 4px; border: none; background: none;
+      font-size: 10px; color: var(--text-secondary); cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn .tab-icon { font-size: 24px; margin-bottom: 1px; }
+    .tab-btn.active { color: var(--primary); }
+
+    /* ===== History Page ===== */
+    .history-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .history-nav button {
+      border: none; background: none; font-size: 20px; padding: 8px 12px;
+      cursor: pointer; color: var(--text);
+    }
+    .history-nav .date-label { font-size: 16px; font-weight: 600; }
+    .history-list .tl-item { padding: 8px 0; }
+
+    /* ===== Report Page ===== */
+    .report-range {
+      display: flex; gap: 8px; margin-bottom: 16px;
+    }
+    .report-range select, .report-range input {
+      flex: 1; padding: 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 14px; font-family: inherit; background: var(--card);
+    }
+    .report-stats {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;
+    }
+    .report-stat {
+      background: var(--card); padding: 14px; border-radius: var(--radius-sm);
+      text-align: center; box-shadow: var(--shadow);
+    }
+    .report-stat .num { font-size: 24px; font-weight: 700; }
+    .report-stat .lbl { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .report-stat.avg-water .num { color: var(--water); }
+    .report-stat.total-urine .num { color: var(--urine); }
+    .report-stat.symptom-count .num { color: var(--symptom); }
+
+    .btn-export {
+      width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm);
+      background: var(--primary); color: #fff; font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-export:active { opacity: 0.8; }
+
+    #exportOutput {
+      display: none; margin-top: 12px; padding: 14px;
+      background: var(--card); border-radius: var(--radius-sm); font-size: 13px;
+      white-space: pre-wrap; word-break: break-word;
+      border: 1px solid var(--border); max-height: 400px; overflow-y: auto;
+    }
+    #exportOutput.show { display: block; }
+    .copy-hint { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 8px; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px;
+      border-radius: 20px; font-size: 14px; z-index: 200;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ===== Dark mode support ===== */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1C1C1E;
+        --card: #2C2C2E;
+        --text: #F0F0F0;
+        --text-secondary: #9A9A9A;
+        --border: #3A3A3C;
+        --shadow: 0 2px 12px rgba(0,0,0,0.2);
+        --primary-light: #2C3E38;
+      }
+      body { background: var(--bg); }
+      .tabs { background: rgba(44,44,46,0.92); }
+      .modal { background: #2C2C2E; }
+      .modal input[type="text"] { background: #1C1C1E; color: #F0F0F0; }
+      .water-btns button { background: rgba(74,144,217,0.15); }
+      .urine-btns button { background: rgba(212,168,83,0.15); }
+      .symptom-tag { background: rgba(217,122,107,0.15); }
+      .tl-icon.water { background: rgba(74,144,217,0.2); }
+      .tl-icon.urine { background: rgba(212,168,83,0.2); }
+      .tl-icon.symptom { background: rgba(217,122,107,0.2); }
+      .sev-btn { background: #1C1C1E; border-color: #3A3A3C; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== APP ========== -->
+  <div class="app">
+
+    <!-- ===== PAGE: Today ===== -->
+    <div id="page-today" class="page active">
+      <div class="header">
+        <div>
+          <h1>康復日記</h1>
+          <div class="header-date" id="todayDate"></div>
+        </div>
+      </div>
+
+      <!-- Summary Grid -->
+      <div class="summary-grid" id="summaryGrid">
+        <div class="summary-item">
+          <span class="emoji">💧</span>
+          <div class="value" id="sumWater">0</div>
+          <div class="label">飲水（杯）</div>
+        </div>
+        <div class="summary-item">
+          <span class="emoji">🚽</span>
+          <div class="value" id="sumUrine">0</div>
+          <div class="label">排尿（次）</div>
+        </div>
+        <div class="summary-item">
+          <span class="emoji">🤒</span>
+          <div class="value" id="sumSymptom">0</div>
+          <div class="label">不適（次）</div>
+        </div>
+      </div>
+
+      <!-- Water Card -->
+      <div class="card">
+        <div class="card-title">💧 飲水目標</div>
+        <div class="water-progress">
+          <span class="count" id="waterCount">0</span>
+          <span class="target">/ 8 杯</span>
+          <div class="water-bar">
+            <div class="water-bar-fill" id="waterBarFill"></div>
+          </div>
+        </div>
+        <div class="water-btns">
+          <button class="small" onclick="addWater(0.5)">半杯</button>
+          <button onclick="addWater(1)">+1 杯</button>
+          <button onclick="addWater(2)">+2 杯</button>
+        </div>
+      </div>
+
+      <!-- Urine Card -->
+      <div class="card">
+        <div class="card-title">🚽 排尿記錄</div>
+        <div class="urine-row">
+          <span class="count">今日 <span id="urineCount">0</span> 次</span>
+          <div class="urine-btns">
+            <button onclick="addUrine(1)">+1 次</button>
+            <button onclick="addUrine(2)">+2 次</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Symptom Card -->
+      <div class="card">
+        <div class="card-title">🤒 不適記錄</div>
+        <div class="symptom-tags" id="symptomQuickTags">
+          <button class="symptom-tag" data-symptom="噁心">🤢 噁心</button>
+          <button class="symptom-tag" data-symptom="疲勞">😴 疲勞</button>
+          <button class="symptom-tag" data-symptom="疼痛">😣 疼痛</button>
+          <button class="symptom-tag" data-symptom="頭暈">😵 頭暈</button>
+          <button class="symptom-tag" data-symptom="食慾不振">🍽️ 無食慾</button>
+          <button class="symptom-tag" data-symptom="腹瀉">💩 腹瀉</button>
+          <button class="symptom-tag" data-symptom="便秘">💩 便秘</button>
+          <button class="symptom-tag" onclick="openSymptomModal()">✏️ 自訂</button>
+        </div>
+      </div>
+
+      <!-- Today Timeline -->
+      <div class="card">
+        <div class="card-title">📋 今日時間線</div>
+        <div class="timeline" id="todayTimeline">
+          <div class="empty-state">今日未有記錄，點擊上面開始記錄 📝</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: History ===== -->
+    <div id="page-history" class="page">
+      <div class="header">
+        <h1>📅 回顧</h1>
+      </div>
+      <div class="history-nav">
+        <button onclick="historyPrev()">←</button>
+        <span class="date-label" id="historyDate"></span>
+        <button onclick="historyNext()">→</button>
+      </div>
+      <div class="card">
+        <div class="timeline" id="historyTimeline">
+          <div class="empty-state">呢日無記錄</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAGE: Report ===== -->
+    <div id="page-report" class="page">
+      <div class="header">
+        <h1>📊 健康報表</h1>
+      </div>
+      <div class="card">
+        <div class="card-title">📆 選擇日期範圍</div>
+        <div class="report-range">
+          <input type="date" id="reportFrom">
+          <span style="align-self:center">至</span>
+          <input type="date" id="reportTo">
+        </div>
+        <div class="report-stats" id="reportStats">
+          <div class="report-stat avg-water">
+            <div class="num" id="rptAvgWater">-</div>
+            <div class="lbl">平均飲水（杯/日）</div>
+          </div>
+          <div class="report-stat total-urine">
+            <div class="num" id="rptAvgUrine">-</div>
+            <div class="lbl">平均排尿（次/日）</div>
+          </div>
+          <div class="report-stat symptom-count">
+            <div class="num" id="rptSymptomTotal">-</div>
+            <div class="lbl">不適總次數</div>
+          </div>
+          <div class="report-stat">
+            <div class="num" id="rptTopSymptom">-</div>
+            <div class="lbl">最常見不適</div>
+          </div>
+        </div>
+        <button class="btn-export" onclick="generateReport()">📋 生成報表俾醫生</button>
+        <div id="exportOutput"></div>
+        <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
+          <div class="card-title">💾 資料備份</div>
+          <button class="btn-export" style="margin-bottom:8px; background:var(--water);" onclick="backupData()">📤 匯出備份檔案</button>
+          <button class="btn-export" style="background:var(--urine);" onclick="document.getElementById('restoreInput').click()">📥 從備份還原</button>
+          <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreData(event)">
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .app -->
+
+  <!-- ========== BOTTOM TABS ========== -->
+  <div class="tabs">
+    <div class="tabs-inner">
+      <button class="tab-btn active" data-tab="today" onclick="switchTab('today')">
+        <span class="tab-icon">📝</span>
+        <span>今日</span>
+      </button>
+      <button class="tab-btn" data-tab="history" onclick="switchTab('history')">
+        <span class="tab-icon">📅</span>
+        <span>回顧</span>
+      </button>
+      <button class="tab-btn" data-tab="report" onclick="switchTab('report')">
+        <span class="tab-icon">📊</span>
+        <span>報表</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== SYMPTOM MODAL ========== -->
+  <div class="modal-overlay" id="symptomModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h2>✏️ 記錄不適</h2>
+      <div class="form-group">
+        <label>不適類型</label>
+        <div class="symptom-tags" id="modalSymptomTags">
+          <button class="symptom-tag" data-symptom="噁心">🤢 噁心</button>
+          <button class="symptom-tag" data-symptom="疲勞">😴 疲勞</button>
+          <button class="symptom-tag" data-symptom="疼痛">😣 疼痛</button>
+          <button class="symptom-tag" data-symptom="頭暈">😵 頭暈</button>
+          <button class="symptom-tag" data-symptom="食慾不振">🍽️ 無食慾</button>
+          <button class="symptom-tag" data-symptom="腹瀉">💩 腹瀉</button>
+          <button class="symptom-tag" data-symptom="便秘">💩 便秘</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>或自己輸入</label>
+        <input type="text" id="symptomCustom" placeholder="例如：口腔潰瘍、手麻..." maxlength="30">
+      </div>
+      <div class="form-group">
+        <label>嚴重程度（1 最輕 – 5 最重）</label>
+        <div class="sev-select" id="sevSelect">
+          <button class="sev-btn" data-sev="1">1</button>
+          <button class="sev-btn" data-sev="2">2</button>
+          <button class="sev-btn" data-sev="3">3</button>
+          <button class="sev-btn" data-sev="4">4</button>
+          <button class="sev-btn" data-sev="5">5</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="confirmSymptom()">✅ 記錄</button>
+      <button class="btn-cancel" onclick="closeSymptomModal()">取消</button>
+    </div>
+  </div>
+
+  <!-- ========== TOAST ========== -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ========== JAVASCRIPT ========== -->
+  <script>
+    // ============================
+    // 資料層 （IndexedDB）
+    // ============================
+    const DB_NAME = 'HealthTracker';
+    const DB_VER = 1;
+    const STORE = 'records';
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VER);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE)) {
+            const store = db.createObjectStore(STORE, { keyPath: 'id' });
+            store.createIndex('date', 'date', { unique: false });
+            store.createIndex('type', 'type', { unique: false });
+            store.createIndex('timestamp', 'timestamp', { unique: false });
+          }
+        };
+        req.onsuccess = (e) => resolve(e.target.result);
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    async function addRecord(record) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readwrite');
+        const store = tx.objectStore(STORE);
+        store.add(record);
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    async function deleteRecord(id) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readwrite');
+        const store = tx.objectStore(STORE);
+        store.delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    async function getRecordsByDate(dateStr) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readonly');
+        const store = tx.objectStore(STORE);
+        const index = store.index('date');
+        const range = IDBKeyRange.only(dateStr);
+        const results = [];
+        index.openCursor(range).onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) { results.push(cursor.value); cursor.continue(); }
+          else { resolve(results.sort((a,b) => b.timestamp - a.timestamp)); }
+        };
+      });
+    }
+
+    async function getAllRecords() {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readonly');
+        const store = tx.objectStore(STORE);
+        const results = [];
+        store.openCursor().onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) { results.push(cursor.value); cursor.continue(); }
+          else { resolve(results); }
+        };
+      });
+    }
+
+    // ============================
+    // 工具函數
+    // ============================
+    function todayStr() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    function timeStr(ts) {
+      const d = new Date(ts);
+      return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+      return d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日 （週' + weekdays[d.getDay()] + '）';
+    }
+
+    function now() { return Date.now(); }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._hide);
+      t._hide = setTimeout(() => t.classList.remove('show'), 1800);
+    }
+
+    // ============================
+    // 狀態
+    // ============================
+    let historyDate = new Date();
+    let selectedSeverity = 3;
+    let selectedModalSymptom = '';
+    let allRecordsCache = [];
+
+    // ============================
+    // 記錄功能
+    // ============================
+    async function addWater(cups) {
+      const r = {
+        id: now(),
+        type: 'water',
+        timestamp: now(),
+        date: todayStr(),
+        cups: cups
+      };
+      await addRecord(r);
+      showToast('💧 已記錄 ' + cups + ' 杯水');
+      refreshToday();
+    }
+
+    async function addUrine(times) {
+      const r = {
+        id: now(),
+        type: 'urine',
+        timestamp: now(),
+        date: todayStr(),
+        times: times
+      };
+      await addRecord(r);
+      showToast('🚽 已記錄排尿 ' + times + ' 次');
+      refreshToday();
+    }
+
+    // Quick symptom tags on main page
+    document.querySelectorAll('#symptomQuickTags .symptom-tag[data-symptom]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const symptom = btn.dataset.symptom;
+        // Quick add with default severity 3
+        const r = {
+          id: now(),
+          type: 'symptom',
+          timestamp: now(),
+          date: todayStr(),
+          symptom: symptom,
+          severity: 3,
+          note: ''
+        };
+        await addRecord(r);
+        showToast('🤒 已記錄：' + symptom + '（3級）');
+        refreshToday();
+      });
+    });
+
+    // ============================
+    // Symptom Modal
+    // ============================
+    function openSymptomModal() {
+      document.getElementById('symptomModal').classList.add('active');
+      selectedSeverity = 3;
+      selectedModalSymptom = '';
+      document.getElementById('symptomCustom').value = '';
+      document.querySelectorAll('#modalSymptomTags .symptom-tag').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('.sev-btn').forEach(b => b.classList.toggle('selected', b.dataset.sev == '3'));
+    }
+
+    function closeSymptomModal() {
+      document.getElementById('symptomModal').classList.remove('active');
+    }
+
+    document.querySelectorAll('#modalSymptomTags .symptom-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#modalSymptomTags .symptom-tag').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedModalSymptom = btn.dataset.symptom;
+        document.getElementById('symptomCustom').value = '';
+      });
+    });
+
+    document.getElementById('symptomCustom').addEventListener('input', function() {
+      if (this.value.trim()) {
+        document.querySelectorAll('#modalSymptomTags .symptom-tag').forEach(b => b.classList.remove('selected'));
+        selectedModalSymptom = '';
+      }
+    });
+
+    document.querySelectorAll('.sev-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sev-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedSeverity = parseInt(btn.dataset.sev);
+      });
+    });
+
+    async function confirmSymptom() {
+      let symptom = selectedModalSymptom;
+      const custom = document.getElementById('symptomCustom').value.trim();
+      if (custom) symptom = custom;
+      if (!symptom) { showToast('請選擇或輸入不適類型'); return; }
+      const r = {
+        id: now(),
+        type: 'symptom',
+        timestamp: now(),
+        date: todayStr(),
+        symptom: symptom,
+        severity: selectedSeverity,
+        note: ''
+      };
+      await addRecord(r);
+      closeSymptomModal();
+      showToast('🤒 已記錄：' + symptom + '（' + selectedSeverity + '級）');
+      refreshToday();
+    }
+
+    // Close modal by tapping overlay
+    document.getElementById('symptomModal').addEventListener('click', function(e) {
+      if (e.target === this) closeSymptomModal();
+    });
+
+    // ============================
+    // 刪除記錄
+    // ============================
+    async function deleteRecordById(id, context) {
+      await deleteRecord(id);
+      showToast('已刪除');
+      if (context === 'today') refreshToday();
+      else refreshHistory();
+    }
+
+    // ============================
+    // 渲染 Today
+    // ============================
+    async function refreshToday() {
+      const records = await getRecordsByDate(todayStr());
+      renderTodaySummary(records);
+      renderWater(records);
+      renderUrine(records);
+      renderTodayTimeline(records);
+    }
+
+    function renderTodaySummary(records) {
+      const water = records.filter(r => r.type === 'water').reduce((s, r) => s + r.cups, 0);
+      const urine = records.filter(r => r.type === 'urine').reduce((s, r) => s + r.times, 0);
+      const symptom = records.filter(r => r.type === 'symptom').length;
+      document.getElementById('sumWater').textContent = water;
+      document.getElementById('sumUrine').textContent = urine;
+      document.getElementById('sumSymptom').textContent = symptom;
+    }
+
+    function renderWater(records) {
+      const total = records.filter(r => r.type === 'water').reduce((s, r) => s + r.cups, 0);
+      document.getElementById('waterCount').textContent = total;
+      const pct = Math.min((total / 8) * 100, 100);
+      document.getElementById('waterBarFill').style.width = pct + '%';
+    }
+
+    function renderUrine(records) {
+      const total = records.filter(r => r.type === 'urine').reduce((s, r) => s + r.times, 0);
+      document.getElementById('urineCount').textContent = total;
+    }
+
+    function renderTodayTimeline(records) {
+      const container = document.getElementById('todayTimeline');
+      if (records.length === 0) {
+        container.innerHTML = '<div class="empty-state">今日未有記錄，點擊上面開始記錄 📝</div>';
+        return;
+      }
+      let html = '';
+      records.forEach(r => {
+        const t = timeStr(r.timestamp);
+        if (r.type === 'water') {
+          html += `<div class="tl-item">
+            <div class="tl-icon water">💧</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text">飲水 ${r.cups} 杯</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'today')">刪除</button></div>
+            </div>
+          </div>`;
+        } else if (r.type === 'urine') {
+          html += `<div class="tl-item">
+            <div class="tl-icon urine">🚽</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text">排尿 ${r.times} 次</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'today')">刪除</button></div>
+            </div>
+          </div>`;
+        } else if (r.type === 'symptom') {
+          html += `<div class="tl-item">
+            <div class="tl-icon symptom">🤒</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text">${r.symptom}（${r.severity}級）${r.note ? '— ' + r.note : ''}</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'today')">刪除</button></div>
+            </div>
+          </div>`;
+        }
+      });
+      container.innerHTML = html;
+    }
+
+    // ============================
+    // 今天日期
+    // ============================
+    document.getElementById('todayDate').textContent = formatDate(todayStr());
+
+    // ============================
+    // Tab 切換
+    // ============================
+    function switchTab(tab) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + tab).classList.add('active');
+      document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+      if (tab === 'history') refreshHistory();
+      if (tab === 'report') refreshReport();
+    }
+
+    // ============================
+    // History 頁面
+    // ============================
+    function historyDateStr() {
+      return historyDate.getFullYear() + '-' + String(historyDate.getMonth()+1).padStart(2,'0') + '-' + String(historyDate.getDate()).padStart(2,'0');
+    }
+
+    function historyPrev() {
+      historyDate.setDate(historyDate.getDate() - 1);
+      refreshHistory();
+    }
+    function historyNext() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      if (historyDate < tomorrow) {
+        historyDate.setDate(historyDate.getDate() + 1);
+        refreshHistory();
+      }
+    }
+
+    async function refreshHistory() {
+      document.getElementById('historyDate').textContent = formatDate(historyDateStr());
+      const records = await getRecordsByDate(historyDateStr());
+      const container = document.getElementById('historyTimeline');
+      if (records.length === 0) {
+        container.innerHTML = '<div class="empty-state">呢日無記錄</div>';
+        return;
+      }
+      let html = '';
+      records.forEach(r => {
+        const t = timeStr(r.timestamp);
+        if (r.type === 'water') {
+          html += `<div class="tl-item">
+            <div class="tl-icon water">💧</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text">飲水 ${r.cups} 杯</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'history')">刪除</button></div>
+            </div>
+          </div>`;
+        } else if (r.type === 'urine') {
+          html += `<div class="tl-item">
+            <div class="tl-icon urine">🚽</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text">排尿 ${r.times} 次</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'history')">刪除</button></div>
+            </div>
+          </div>`;
+        } else if (r.type === 'symptom') {
+          html += `<div class="tl-item">
+            <div class="tl-icon symptom">🤒</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text">${r.symptom}（${r.severity}級）${r.note ? '— ' + r.note : ''}</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'history')">刪除</button></div>
+            </div>
+          </div>`;
+        }
+      });
+      container.innerHTML = html;
+    }
+
+    // ============================
+    // Report 頁面
+    // ============================
+    function refreshReport() {
+      const today = new Date();
+      const sevenAgo = new Date(today);
+      sevenAgo.setDate(sevenAgo.getDate() - 6);
+      document.getElementById('reportFrom').value = dateInputStr(sevenAgo);
+      document.getElementById('reportTo').value = dateInputStr(today);
+    }
+
+    function dateInputStr(d) {
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    async function generateReport() {
+      const from = document.getElementById('reportFrom').value;
+      const to = document.getElementById('reportTo').value;
+      if (!from || !to) { showToast('請選擇日期範圍'); return; }
+
+      const all = await getAllRecords();
+      const fromTs = new Date(from + 'T00:00:00').getTime();
+      const toTs = new Date(to + 'T23:59:59').getTime();
+      const inRange = all.filter(r => r.timestamp >= fromTs && r.timestamp <= toTs);
+
+      // Stats
+      const days = new Set(inRange.map(r => r.date)).size || 1;
+      const waterTotal = inRange.filter(r => r.type === 'water').reduce((s, r) => s + r.cups, 0);
+      const urineTotal = inRange.filter(r => r.type === 'urine').reduce((s, r) => s + r.times, 0);
+      const symptomRecords = inRange.filter(r => r.type === 'symptom');
+      const symptomTotal = symptomRecords.length;
+
+      // Top symptom
+      const symptomCounts = {};
+      symptomRecords.forEach(r => { symptomCounts[r.symptom] = (symptomCounts[r.symptom] || 0) + 1; });
+      let topSymptom = '-';
+      let topCount = 0;
+      for (const [s, c] of Object.entries(symptomCounts)) {
+        if (c > topCount) { topSymptom = s; topCount = c; }
+      }
+
+      document.getElementById('rptAvgWater').textContent = (waterTotal / days).toFixed(1);
+      document.getElementById('rptAvgUrine').textContent = (urineTotal / days).toFixed(1);
+      document.getElementById('rptSymptomTotal').textContent = symptomTotal;
+      document.getElementById('rptTopSymptom').textContent = topSymptom + (topCount > 0 ? ' (' + topCount + '次)' : '');
+
+      // Generate text report
+      const lines = [];
+      lines.push('═══════════════════════════════');
+      lines.push('        康復日記 — 健康報表');
+      lines.push('═══════════════════════════════');
+      lines.push('');
+      lines.push('📆 期間：' + formatDate(from) + ' 至 ' + formatDate(to));
+      lines.push('📊 共 ' + days + ' 天');
+      lines.push('');
+      lines.push('── 綜合統計 ──');
+      lines.push('💧 平均每日飲水：' + (waterTotal / days).toFixed(1) + ' 杯');
+      lines.push('🚽 平均每日排尿：' + (urineTotal / days).toFixed(1) + ' 次');
+      lines.push('🤒 不適總次數：' + symptomTotal + ' 次');
+      lines.push('   最常見不適：' + topSymptom + (topCount > 0 ? '（' + topCount + '次）' : ''));
+      lines.push('');
+      lines.push('── 每日摘要 ──');
+
+      // Group by date
+      const byDate = {};
+      inRange.forEach(r => {
+        if (!byDate[r.date]) byDate[r.date] = [];
+        byDate[r.date].push(r);
+      });
+      const sortedDates = Object.keys(byDate).sort();
+      sortedDates.forEach(d => {
+        const items = byDate[d];
+        const w = items.filter(r => r.type === 'water').reduce((s, r) => s + r.cups, 0);
+        const u = items.filter(r => r.type === 'urine').reduce((s, r) => s + r.times, 0);
+        const syms = items.filter(r => r.type === 'symptom').map(r => r.symptom + '(' + r.severity + '級)').join('、');
+        lines.push('  ' + formatDate(d));
+        lines.push('    飲水：' + w + '杯 ｜ 排尿：' + u + '次');
+        if (syms) lines.push('    不適：' + syms);
+        lines.push('');
+      });
+
+      lines.push('── 詳細記錄 ──');
+      // Reverse chronological for detail
+      const sortedAll = [...inRange].sort((a,b) => b.timestamp - a.timestamp);
+      sortedAll.forEach(r => {
+        const d = r.date;
+        const t = timeStr(r.timestamp);
+        if (r.type === 'water') lines.push('  ' + d + ' ' + t + '  💧 飲水 ' + r.cups + ' 杯');
+        else if (r.type === 'urine') lines.push('  ' + d + ' ' + t + '  🚽 排尿 ' + r.times + ' 次');
+        else if (r.type === 'symptom') lines.push('  ' + d + ' ' + t + '  🤒 ' + r.symptom + '（' + r.severity + '級）');
+      });
+
+      lines.push('');
+      lines.push('═══════════════════════════════');
+      lines.push('  生成時間：' + new Date().toLocaleString('zh-HK'));
+      lines.push('  康復日記 v1.0');
+      lines.push('═══════════════════════════════');
+
+      const output = document.getElementById('exportOutput');
+      output.textContent = lines.join('\n');
+      output.classList.add('show');
+
+      // Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(lines.join('\n'));
+        showToast('✅ 已複製到剪貼簿，可以貼俾醫生！');
+      } catch {
+        showToast('📋 已生成，請長按複製');
+      }
+    }
+
+    // ============================
+    // 備份 ＆ 還原
+    // ============================
+    async function backupData() {
+      const all = await getAllRecords();
+      const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '康復日記備份_' + todayStr() + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('✅ 備份已下載，請保存好呢個檔案');
+    }
+
+    async function restoreData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!Array.isArray(data)) throw new Error('格式錯誤');
+
+        const db = await openDB();
+        const tx = db.transaction(STORE, 'readwrite');
+        const store = tx.objectStore(STORE);
+        let count = 0;
+        for (const record of data) {
+          if (record.id && record.type && record.timestamp && record.date) {
+            store.put(record);
+            count++;
+          }
+        }
+        await new Promise((resolve, reject) => {
+          tx.oncomplete = () => resolve();
+          tx.onerror = (e) => reject(e.target.error);
+        });
+        showToast('✅ 已還原 ' + count + ' 條記錄');
+        refreshToday();
+        refreshReport();
+      } catch (e) {
+        showToast('❌ 還原失敗：檔案格式不正確');
+      }
+      event.target.value = '';
+    }
+
+    // ============================
+    // 初始化
+    // ============================
+    refreshToday();
+    refreshReport();
+
+    // Register service worker for offline support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(() => {
+        console.log('✅ 離線支援已啟用');
+      }).catch(() => {});
+    }
+
+    console.log('📋 康復日記已啟動！你的資料全部存在呢部手機嘅瀏覽器入面，安心使用。');
+  </script>
+</body>
+</html>
