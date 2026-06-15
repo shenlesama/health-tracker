@@ -37,6 +37,9 @@
       --urine-bg: #FDF5E0;
       --symptom: #D97A6B;
       --symptom-bg: #FCF0ED;
+      --temp: #E86850;
+      --temp-bg: #FDF0ED;
+      --temp-warn: #FF3B30;
       --border: #E8E4DF;
       --shadow: 0 2px 12px rgba(0,0,0,0.06);
       --radius: 16px;
@@ -63,6 +66,12 @@
       font-size: 22px; font-weight: 700; letter-spacing: 0.5px;
     }
     .header-date { font-size: 14px; color: var(--text-secondary); }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-btn {
+      border: none; background: none; font-size: 22px; cursor: pointer;
+      padding: 4px 8px; color: var(--text-secondary); transition: all 0.15s;
+    }
+    .header-btn:active { transform: scale(0.9); opacity: 0.5; }
 
     /* ===== Cards ===== */
     .card {
@@ -204,6 +213,12 @@
       font-size: 16px; outline: none; font-family: inherit;
     }
     .modal input[type="text"]:focus { border-color: var(--primary); }
+    .modal input[type="number"] {
+      width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 18px; outline: none; font-family: inherit; text-align: center; font-weight: 600;
+    }
+    .modal input[type="number"]:focus { border-color: var(--primary); }
+    .modal .hint { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
     .modal .btn-primary {
       width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm);
       background: var(--primary); color: #fff; font-size: 16px; font-weight: 600;
@@ -330,6 +345,9 @@
           <h1>康復日記</h1>
           <div class="header-date" id="todayDate"></div>
         </div>
+        <div class="header-right">
+          <button class="header-btn" onclick="openSettings()">⚙️</button>
+        </div>
       </div>
 
       <!-- Summary Grid -->
@@ -338,6 +356,11 @@
           <span class="emoji">💧</span>
           <div class="value" id="sumWater">0</div>
           <div class="label">飲水（杯）</div>
+        </div>
+        <div class="summary-item">
+          <span class="emoji">💧</span>
+          <div class="value" id="sumWaterMl" style="font-size:16px;color:var(--water)">0</div>
+          <div class="label">ml</div>
         </div>
         <div class="summary-item">
           <span class="emoji">🚽</span>
@@ -353,10 +376,13 @@
 
       <!-- Water Card -->
       <div class="card">
-        <div class="card-title">💧 飲水目標</div>
+        <div class="card-title">💧 飲水目標 <span style="font-size:12px;font-weight:400;color:var(--text-secondary)">（<span id="cupSizeLabel">250</span>ml/杯）</span></div>
         <div class="water-progress">
           <span class="count" id="waterCount">0</span>
-          <span class="target">/ 8 杯</span>
+          <span class="target">杯</span>
+          <span style="font-size:14px;color:var(--text-secondary);margin:0 4px">｜</span>
+          <span style="font-size:20px;font-weight:600;color:var(--water)" id="waterMlCount">0</span>
+          <span class="target" id="waterMlTarget">/ 2000 ml</span>
           <div class="water-bar">
             <div class="water-bar-fill" id="waterBarFill"></div>
           </div>
@@ -370,14 +396,41 @@
 
       <!-- Urine Card -->
       <div class="card">
-        <div class="card-title">🚽 排尿記錄</div>
+        <div class="card-title">🚽 排尿記錄（持續時間）</div>
         <div class="urine-row">
           <span class="count">今日 <span id="urineCount">0</span> 次</span>
           <div class="urine-btns">
-            <button onclick="addUrine(1)">+1 次</button>
-            <button onclick="addUrine(2)">+2 次</button>
+            <button onclick="openUrineModal()">➕ 放尿</button>
           </div>
         </div>
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px" id="urineQuickBtns">
+          <button class="symptom-tag" onclick="addUrine(3)">&lt; 5秒</button>
+          <button class="symptom-tag" onclick="addUrine(8)">5-10秒</button>
+          <button class="symptom-tag" onclick="addUrine(15)">10-20秒</button>
+          <button class="symptom-tag" onclick="addUrine(30)">&gt; 20秒</button>
+        </div>
+      </div>
+
+      <!-- Temperature Card -->
+      <div class="card">
+        <div class="card-title">🌡️ 體溫</div>
+        <div style="display:flex;gap:12px;margin-bottom:10px">
+          <div style="flex:1;background:var(--temp-bg);border-radius:var(--radius-sm);padding:12px;text-align:center">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">🌅 早上</div>
+            <div style="font-size:26px;font-weight:700;color:var(--temp)" id="tempMorning">--</div>
+            <div style="font-size:12px;color:var(--text-secondary)">°C</div>
+          </div>
+          <div style="flex:1;background:var(--temp-bg);border-radius:var(--radius-sm);padding:12px;text-align:center">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">🌇 晚上</div>
+            <div style="font-size:26px;font-weight:700;color:var(--temp)" id="tempEvening">--</div>
+            <div style="font-size:12px;color:var(--text-secondary)">°C</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button style="flex:1;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--temp-bg);color:var(--temp);font-size:15px;font-weight:600;cursor:pointer;transition:all 0.15s" onclick="openTempModal('morning')">🌅 記錄早上</button>
+          <button style="flex:1;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--temp-bg);color:var(--temp);font-size:15px;font-weight:600;cursor:pointer;transition:all 0.15s" onclick="openTempModal('evening')">🌇 記錄晚上</button>
+        </div>
+        <div id="tempWarning" style="display:none;margin-top:8px;padding:8px 12px;background:#FFF0F0;border-radius:8px;font-size:13px;color:var(--temp-warn);font-weight:500;text-align:center"></div>
       </div>
 
       <!-- Symptom Card -->
@@ -433,14 +486,18 @@
           <span style="align-self:center">至</span>
           <input type="date" id="reportTo">
         </div>
-        <div class="report-stats" id="reportStats">
+        <div class="report-stats" id="reportStats" style="grid-template-columns:1fr 1fr 1fr">
           <div class="report-stat avg-water">
             <div class="num" id="rptAvgWater">-</div>
-            <div class="lbl">平均飲水（杯/日）</div>
+            <div class="lbl">平均飲水</div>
           </div>
           <div class="report-stat total-urine">
             <div class="num" id="rptAvgUrine">-</div>
-            <div class="lbl">平均排尿（次/日）</div>
+            <div class="lbl">平均排尿</div>
+          </div>
+          <div class="report-stat" style="background:var(--temp-bg)">
+            <div class="num" id="rptAvgTemp" style="color:var(--temp)">-</div>
+            <div class="lbl">平均體溫</div>
           </div>
           <div class="report-stat symptom-count">
             <div class="num" id="rptSymptomTotal">-</div>
@@ -449,6 +506,10 @@
           <div class="report-stat">
             <div class="num" id="rptTopSymptom">-</div>
             <div class="lbl">最常見不適</div>
+          </div>
+          <div class="report-stat" style="background:var(--temp-bg)">
+            <div class="num" id="rptHighTemp" style="color:var(--temp-warn);font-size:18px">-</div>
+            <div class="lbl">最高體溫</div>
           </div>
         </div>
         <button class="btn-export" onclick="generateReport()">📋 生成報表俾醫生</button>
@@ -515,6 +576,74 @@
       </div>
       <button class="btn-primary" onclick="confirmSymptom()">✅ 記錄</button>
       <button class="btn-cancel" onclick="closeSymptomModal()">取消</button>
+    </div>
+  </div>
+
+  <!-- ========== URINE MODAL ========== -->
+  <div class="modal-overlay" id="urineModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h2>🚽 記錄排尿</h2>
+      <div class="form-group">
+        <label>持續時間</label>
+        <div class="sev-select" id="urineSevSelect">
+          <button class="sev-btn" data-urine-sec="3" style="width:auto;padding:10px 14px;border-radius:12px;font-size:14px">&lt; 5秒</button>
+          <button class="sev-btn" data-urine-sec="8" style="width:auto;padding:10px 14px;border-radius:12px;font-size:14px">5-10秒</button>
+          <button class="sev-btn" data-urine-sec="15" style="width:auto;padding:10px 14px;border-radius:12px;font-size:14px">10-20秒</button>
+          <button class="sev-btn" data-urine-sec="30" style="width:auto;padding:10px 14px;border-radius:12px;font-size:14px">&gt; 20秒</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>或自訂秒數</label>
+        <input type="number" id="urineCustomSec" placeholder="請輸入秒數" min="1" max="300" style="text-align:left">
+      </div>
+      <button class="btn-primary" onclick="confirmUrine()">✅ 記錄</button>
+      <button class="btn-cancel" onclick="closeUrineModal()">取消</button>
+    </div>
+  </div>
+
+  <!-- ========== SETTINGS MODAL ========== -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h2>⚙️ 設定</h2>
+      <div class="form-group">
+        <label>每杯水容量（ml）</label>
+        <div style="display:flex;align-items:center;gap:12px">
+          <input type="number" id="cupSizeInput" value="250" min="50" max="1000" step="10">
+          <span style="font-size:16px;color:var(--text-secondary)">ml</span>
+        </div>
+        <div class="hint">目標：8 杯 = <span id="totalMlHint">2000</span> ml</div>
+      </div>
+      <div class="form-group">
+        <label>每日飲水目標（杯）</label>
+        <div style="display:flex;align-items:center;gap:12px">
+          <input type="number" id="dailyCupGoal" value="8" min="1" max="30">
+          <span style="font-size:16px;color:var(--text-secondary)">杯</span>
+        </div>
+        <div class="hint">建議化療期間每日 8-10 杯</div>
+      </div>
+      <button class="btn-primary" onclick="saveSettings()">💾 儲存設定</button>
+      <button class="btn-cancel" onclick="closeSettings()">取消</button>
+    </div>
+  </div>
+
+  <!-- ========== TEMPERATURE MODAL ========== -->
+  <div class="modal-overlay" id="tempModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h2 id="tempModalTitle">🌡️ 記錄體溫</h2>
+      <div class="form-group">
+        <label>體溫（°C）</label>
+        <div style="display:flex;align-items:center;gap:12px">
+          <input type="number" id="tempInput" value="36.5" min="34.0" max="42.0" step="0.1" style="flex:1;font-size:24px;padding:16px;text-align:center">
+          <span style="font-size:20px;color:var(--text-secondary);font-weight:600">°C</span>
+        </div>
+        <div class="hint" id="tempHint">正常體溫範圍：36.0°C ~ 37.2°C</div>
+        <div id="tempAlert" style="display:none;margin-top:6px;padding:8px;background:#FFF0F0;border-radius:8px;font-size:13px;color:var(--temp-warn);text-align:center">⚠️ 超過 37.5°C 需要注意！</div>
+      </div>
+      <button class="btn-primary" onclick="confirmTemp()">✅ 記錄</button>
+      <button class="btn-cancel" onclick="closeTempModal()">取消</button>
     </div>
   </div>
 
@@ -634,7 +763,21 @@
     let historyDate = new Date();
     let selectedSeverity = 3;
     let selectedModalSymptom = '';
+    let selectedUrineSec = 8;
     let allRecordsCache = [];
+
+    // ============================
+    // 設定
+    // ============================
+    function getCupSize() {
+      return parseInt(localStorage.getItem('cupSize')) || 250;
+    }
+    function getDailyGoal() {
+      return parseInt(localStorage.getItem('dailyGoal')) || 8;
+    }
+    function getDailyGoalMl() {
+      return getCupSize() * getDailyGoal();
+    }
 
     // ============================
     // 記錄功能
@@ -652,20 +795,187 @@
       refreshToday();
     }
 
-    async function addUrine(times) {
+    async function addUrine(seconds) {
       const r = {
         id: now(),
         type: 'urine',
         timestamp: now(),
         date: todayStr(),
-        times: times
+        seconds: seconds,
+        times: 1
       };
       await addRecord(r);
-      showToast('🚽 已記錄排尿 ' + times + ' 次');
+      const label = seconds <= 3 ? '<5秒' : seconds <= 8 ? '5-10秒' : seconds <= 15 ? '10-20秒' : '>20秒';
+      showToast('🚽 已記錄排尿 ' + label);
       refreshToday();
     }
 
-    // Quick symptom tags on main page
+    // Urine Modal
+    function openUrineModal() {
+      document.getElementById('urineModal').classList.add('active');
+      selectedUrineSec = 8;
+      document.getElementById('urineCustomSec').value = '';
+      document.querySelectorAll('#urineSevSelect .sev-btn').forEach(b => b.classList.toggle('selected', b.dataset.urineSec == '8'));
+    }
+    function closeUrineModal() {
+      document.getElementById('urineModal').classList.remove('active');
+    }
+    document.querySelectorAll('#urineSevSelect .sev-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#urineSevSelect .sev-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedUrineSec = parseInt(btn.dataset.urineSec);
+        document.getElementById('urineCustomSec').value = '';
+      });
+    });
+    document.getElementById('urineCustomSec').addEventListener('input', function() {
+      if (this.value.trim()) {
+        document.querySelectorAll('#urineSevSelect .sev-btn').forEach(b => b.classList.remove('selected'));
+      }
+    });
+    document.getElementById('urineModal').addEventListener('click', function(e) {
+      if (e.target === this) closeUrineModal();
+    });
+    async function confirmUrine() {
+      let sec = selectedUrineSec;
+      const custom = document.getElementById('urineCustomSec').value.trim();
+      if (custom) sec = parseInt(custom);
+      if (!sec || sec < 1) { showToast('請選擇或輸入秒數'); return; }
+      await addUrine(sec);
+      closeUrineModal();
+    }
+
+    // ============================
+    // 設定
+    // ============================
+    function openSettings() {
+      document.getElementById('cupSizeInput').value = getCupSize();
+      document.getElementById('dailyCupGoal').value = getDailyGoal();
+      updateTotalMlHint();
+      document.getElementById('settingsModal').classList.add('active');
+    }
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.remove('active');
+    }
+    function updateTotalMlHint() {
+      const cups = parseInt(document.getElementById('dailyCupGoal').value) || 8;
+      const ml = parseInt(document.getElementById('cupSizeInput').value) || 250;
+      document.getElementById('totalMlHint').textContent = cups * ml;
+    }
+    document.getElementById('cupSizeInput').addEventListener('input', updateTotalMlHint);
+    document.getElementById('dailyCupGoal').addEventListener('input', updateTotalMlHint);
+    document.getElementById('settingsModal').addEventListener('click', function(e) {
+      if (e.target === this) closeSettings();
+    });
+    function saveSettings() {
+      const cupSize = parseInt(document.getElementById('cupSizeInput').value) || 250;
+      const dailyGoal = parseInt(document.getElementById('dailyCupGoal').value) || 8;
+      localStorage.setItem('cupSize', cupSize);
+      localStorage.setItem('dailyGoal', dailyGoal);
+      closeSettings();
+      showToast('✅ 設定已儲存（' + cupSize + 'ml/杯 × ' + dailyGoal + '杯 = ' + (cupSize * dailyGoal) + 'ml）');
+      refreshToday();
+      refreshReport();
+    }
+
+    // ============================
+    // 體溫
+    // ============================
+    let tempPeriod = 'morning';
+
+    function openTempModal(period) {
+      tempPeriod = period;
+      const label = period === 'morning' ? '🌅 早上' : '🌇 晚上';
+      document.getElementById('tempModalTitle').textContent = label + ' 體溫';
+      document.getElementById('tempInput').value = '36.5';
+      document.getElementById('tempAlert').style.display = 'none';
+      document.getElementById('tempModal').classList.add('active');
+    }
+
+    function closeTempModal() {
+      document.getElementById('tempModal').classList.remove('active');
+    }
+
+    document.getElementById('tempInput').addEventListener('input', function() {
+      const val = parseFloat(this.value);
+      const alert = document.getElementById('tempAlert');
+      if (val >= 37.5) {
+        alert.style.display = 'block';
+      } else {
+        alert.style.display = 'none';
+      }
+    });
+
+    document.getElementById('tempModal').addEventListener('click', function(e) {
+      if (e.target === this) closeTempModal();
+    });
+
+    async function confirmTemp() {
+      const val = parseFloat(document.getElementById('tempInput').value);
+      if (!val || val < 34 || val > 42) {
+        showToast('請輸入有效體溫（34.0-42.0°C）');
+        return;
+      }
+      const r = {
+        id: now(),
+        type: 'temperature',
+        timestamp: now(),
+        date: todayStr(),
+        period: tempPeriod,
+        temperature: val
+      };
+      await addRecord(r);
+      closeTempModal();
+      const label = tempPeriod === 'morning' ? '早上' : '晚上';
+      showToast('🌡️ 已記錄' + label + '體溫：' + val.toFixed(1) + '°C');
+      
+      if (val >= 37.5) {
+        setTimeout(() => showToast('⚠️ 體溫偏高（' + val.toFixed(1) + '°C），請注意！'), 1900);
+      }
+      refreshToday();
+    }
+
+    function renderTemp(records) {
+      const temps = records.filter(r => r.type === 'temperature');
+      const morning = temps.find(r => r.period === 'morning');
+      const evening = temps.find(r => r.period === 'evening');
+      
+      const morningEl = document.getElementById('tempMorning');
+      const eveningEl = document.getElementById('tempEvening');
+      const warningEl = document.getElementById('tempWarning');
+
+      if (morning) {
+        const v = morning.temperature;
+        morningEl.textContent = v.toFixed(1);
+        morningEl.style.color = v >= 37.5 ? 'var(--temp-warn)' : 'var(--temp)';
+      } else {
+        morningEl.textContent = '--';
+        morningEl.style.color = 'var(--temp)';
+      }
+
+      if (evening) {
+        const v = evening.temperature;
+        eveningEl.textContent = v.toFixed(1);
+        eveningEl.style.color = v >= 37.5 ? 'var(--temp-warn)' : 'var(--temp)';
+      } else {
+        eveningEl.textContent = '--';
+        eveningEl.style.color = 'var(--temp)';
+      }
+
+      // Warning
+      let warnMsgs = [];
+      if (morning && morning.temperature >= 37.5) warnMsgs.push('🌅 早上 ' + morning.temperature.toFixed(1) + '°C 偏高');
+      if (evening && evening.temperature >= 37.5) warnMsgs.push('🌇 晚上 ' + evening.temperature.toFixed(1) + '°C 偏高');
+      if (warnMsgs.length > 0) {
+        warningEl.style.display = 'block';
+        warningEl.textContent = '⚠️ ' + warnMsgs.join('、') + '，請注意體溫！';
+      } else {
+        warningEl.style.display = 'none';
+      }
+    }
+
+    // ============================
+    // Quick symptom tags
     document.querySelectorAll('#symptomQuickTags .symptom-tag[data-symptom]').forEach(btn => {
       btn.addEventListener('click', async () => {
         const symptom = btn.dataset.symptom;
@@ -768,22 +1078,32 @@
       renderTodaySummary(records);
       renderWater(records);
       renderUrine(records);
+      renderTemp(records);
       renderTodayTimeline(records);
     }
 
     function renderTodaySummary(records) {
       const water = records.filter(r => r.type === 'water').reduce((s, r) => s + r.cups, 0);
+      const cupSize = getCupSize();
       const urine = records.filter(r => r.type === 'urine').reduce((s, r) => s + r.times, 0);
       const symptom = records.filter(r => r.type === 'symptom').length;
       document.getElementById('sumWater').textContent = water;
+      document.getElementById('sumWaterMl').textContent = water * cupSize;
       document.getElementById('sumUrine').textContent = urine;
       document.getElementById('sumSymptom').textContent = symptom;
     }
 
     function renderWater(records) {
-      const total = records.filter(r => r.type === 'water').reduce((s, r) => s + r.cups, 0);
-      document.getElementById('waterCount').textContent = total;
-      const pct = Math.min((total / 8) * 100, 100);
+      const cups = records.filter(r => r.type === 'water').reduce((s, r) => s + r.cups, 0);
+      const cupSize = getCupSize();
+      const dailyGoal = getDailyGoal();
+      const ml = cups * cupSize;
+      const goalMl = dailyGoal * cupSize;
+      document.getElementById('waterCount').textContent = cups;
+      document.getElementById('cupSizeLabel').textContent = cupSize;
+      document.getElementById('waterMlCount').textContent = ml;
+      document.getElementById('waterMlTarget').textContent = '/ ' + goalMl + ' ml';
+      const pct = Math.min((cups / dailyGoal) * 100, 100);
       document.getElementById('waterBarFill').style.width = pct + '%';
     }
 
@@ -791,7 +1111,6 @@
       const total = records.filter(r => r.type === 'urine').reduce((s, r) => s + r.times, 0);
       document.getElementById('urineCount').textContent = total;
     }
-
     function renderTodayTimeline(records) {
       const container = document.getElementById('todayTimeline');
       if (records.length === 0) {
@@ -811,11 +1130,23 @@
             </div>
           </div>`;
         } else if (r.type === 'urine') {
+          const secLabel = r.seconds <= 3 ? '<5秒' : r.seconds <= 8 ? '5-10秒' : r.seconds <= 15 ? '10-20秒' : '>20秒';
           html += `<div class="tl-item">
             <div class="tl-icon urine">🚽</div>
             <div class="tl-body">
               <div class="tl-time">${t}</div>
-              <div class="tl-text">排尿 ${r.times} 次</div>
+              <div class="tl-text">排尿 ${secLabel}</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'today')">刪除</button></div>
+            </div>
+          </div>`;
+        } else if (r.type === 'temperature') {
+          const periodLabel = r.period === 'morning' ? '🌅 早上' : '🌇 晚上';
+          const tempColor = r.temperature >= 37.5 ? 'color:#FF3B30' : '';
+          html += `<div class="tl-item">
+            <div class="tl-icon" style="background:var(--temp-bg)">🌡️</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text" style="${tempColor}">${periodLabel} 體溫 ${r.temperature.toFixed(1)}°C</div>
               <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'today')">刪除</button></div>
             </div>
           </div>`;
@@ -891,11 +1222,23 @@
             </div>
           </div>`;
         } else if (r.type === 'urine') {
+          const secLabel = r.seconds <= 3 ? '<5秒' : r.seconds <= 8 ? '5-10秒' : r.seconds <= 15 ? '10-20秒' : '>20秒';
           html += `<div class="tl-item">
             <div class="tl-icon urine">🚽</div>
             <div class="tl-body">
               <div class="tl-time">${t}</div>
-              <div class="tl-text">排尿 ${r.times} 次</div>
+              <div class="tl-text">排尿 ${secLabel}</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'history')">刪除</button></div>
+            </div>
+          </div>`;
+        } else if (r.type === 'temperature') {
+          const periodLabel = r.period === 'morning' ? '🌅 早上' : '🌇 晚上';
+          const tempColor = r.temperature >= 37.5 ? 'color:#FF3B30' : '';
+          html += `<div class="tl-item">
+            <div class="tl-icon" style="background:var(--temp-bg)">🌡️</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text" style="${tempColor}">${periodLabel} 體溫 ${r.temperature.toFixed(1)}°C</div>
               <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'history')">刪除</button></div>
             </div>
           </div>`;
@@ -941,9 +1284,26 @@
       // Stats
       const days = new Set(inRange.map(r => r.date)).size || 1;
       const waterTotal = inRange.filter(r => r.type === 'water').reduce((s, r) => s + r.cups, 0);
+      const cupSize = getCupSize();
+      const waterTotalMl = waterTotal * cupSize;
       const urineTotal = inRange.filter(r => r.type === 'urine').reduce((s, r) => s + r.times, 0);
       const symptomRecords = inRange.filter(r => r.type === 'symptom');
       const symptomTotal = symptomRecords.length;
+
+      // Temperature stats
+      const tempRecords = inRange.filter(r => r.type === 'temperature');
+      const tempSum = tempRecords.reduce((s, r) => s + r.temperature, 0);
+      const tempCount = tempRecords.length;
+      const avgTemp = tempCount > 0 ? tempSum / tempCount : null;
+      let highestTemp = null;
+      let highestTempPeriod = '';
+      tempRecords.forEach(r => {
+        if (!highestTemp || r.temperature > highestTemp) {
+          highestTemp = r.temperature;
+          highestTempPeriod = r.period === 'morning' ? '早上' : '晚上';
+        }
+      });
+      const feverDays = new Set(tempRecords.filter(r => r.temperature >= 37.5).map(r => r.date)).size;
 
       // Top symptom
       const symptomCounts = {};
@@ -954,10 +1314,12 @@
         if (c > topCount) { topSymptom = s; topCount = c; }
       }
 
-      document.getElementById('rptAvgWater').textContent = (waterTotal / days).toFixed(1);
+      document.getElementById('rptAvgWater').textContent = (waterTotal / days).toFixed(1) + '杯（' + Math.round(waterTotalMl / days) + 'ml）';
       document.getElementById('rptAvgUrine').textContent = (urineTotal / days).toFixed(1);
+      document.getElementById('rptAvgTemp').textContent = avgTemp ? avgTemp.toFixed(1) + '°C' : '-';
       document.getElementById('rptSymptomTotal').textContent = symptomTotal;
       document.getElementById('rptTopSymptom').textContent = topSymptom + (topCount > 0 ? ' (' + topCount + '次)' : '');
+      document.getElementById('rptHighTemp').textContent = highestTemp ? highestTemp.toFixed(1) + '°C' : '-';
 
       // Generate text report
       const lines = [];
@@ -969,8 +1331,10 @@
       lines.push('📊 共 ' + days + ' 天');
       lines.push('');
       lines.push('── 綜合統計 ──');
-      lines.push('💧 平均每日飲水：' + (waterTotal / days).toFixed(1) + ' 杯');
+      lines.push('💧 平均每日飲水：' + (waterTotal / days).toFixed(1) + ' 杯（' + Math.round(waterTotalMl / days) + 'ml）');
       lines.push('🚽 平均每日排尿：' + (urineTotal / days).toFixed(1) + ' 次');
+      if (avgTemp) lines.push('🌡️ 平均體溫：' + avgTemp.toFixed(1) + '°C' + (feverDays > 0 ? '（' + feverDays + '日有發燒跡象）' : ''));
+      if (highestTemp) lines.push('🌡️ 最高體溫：' + highestTemp.toFixed(1) + '°C（' + highestTempPeriod + '）');
       lines.push('🤒 不適總次數：' + symptomTotal + ' 次');
       lines.push('   最常見不適：' + topSymptom + (topCount > 0 ? '（' + topCount + '次）' : ''));
       lines.push('');
@@ -986,10 +1350,17 @@
       sortedDates.forEach(d => {
         const items = byDate[d];
         const w = items.filter(r => r.type === 'water').reduce((s, r) => s + r.cups, 0);
+        const wMl = w * cupSize;
         const u = items.filter(r => r.type === 'urine').reduce((s, r) => s + r.times, 0);
         const syms = items.filter(r => r.type === 'symptom').map(r => r.symptom + '(' + r.severity + '級)').join('、');
         lines.push('  ' + formatDate(d));
-        lines.push('    飲水：' + w + '杯 ｜ 排尿：' + u + '次');
+        lines.push('    飲水：' + w + '杯（' + wMl + 'ml） ｜ 排尿：' + u + '次');
+        // Temperature for this day
+        const dayTemps = items.filter(r => r.type === 'temperature');
+        if (dayTemps.length > 0) {
+          const tempStr = dayTemps.map(r => (r.period === 'morning' ? '🌅' : '🌇') + r.temperature.toFixed(1) + '°C').join(' ');
+          lines.push('    體溫：' + tempStr);
+        }
         if (syms) lines.push('    不適：' + syms);
         lines.push('');
       });
@@ -1000,9 +1371,17 @@
       sortedAll.forEach(r => {
         const d = r.date;
         const t = timeStr(r.timestamp);
-        if (r.type === 'water') lines.push('  ' + d + ' ' + t + '  💧 飲水 ' + r.cups + ' 杯');
-        else if (r.type === 'urine') lines.push('  ' + d + ' ' + t + '  🚽 排尿 ' + r.times + ' 次');
-        else if (r.type === 'symptom') lines.push('  ' + d + ' ' + t + '  🤒 ' + r.symptom + '（' + r.severity + '級）');
+        if (r.type === 'water') {
+          const ml = r.cups * cupSize;
+          lines.push('  ' + d + ' ' + t + '  💧 飲水 ' + r.cups + ' 杯（' + ml + 'ml）');
+        } else if (r.type === 'urine') {
+          const secLabel = r.seconds <= 3 ? '<5秒' : r.seconds <= 8 ? '5-10秒' : r.seconds <= 15 ? '10-20秒' : '>20秒';
+          lines.push('  ' + d + ' ' + t + '  🚽 排尿 ' + secLabel);
+        } else if (r.type === 'temperature') {
+          const periodLabel = r.period === 'morning' ? '🌅 早上' : '🌇 晚上';
+          const warn = r.temperature >= 37.5 ? ' ⚠️' : '';
+          lines.push('  ' + d + ' ' + t + '  🌡️ ' + periodLabel + ' ' + r.temperature.toFixed(1) + '°C' + warn);
+        } else if (r.type === 'symptom') lines.push('  ' + d + ' ' + t + '  🤒 ' + r.symptom + '（' + r.severity + '級）');
       });
 
       lines.push('');
