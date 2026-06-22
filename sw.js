@@ -1,5 +1,5 @@
 // 康復日記 — Service Worker
-const CACHE = 'health-tracker-v2';
+const CACHE = 'health-tracker-v3';
 const FILES = [
   './',
   './index.html',
