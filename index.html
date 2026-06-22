@@ -526,7 +526,8 @@
         <div id="exportOutput"></div>
         <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:16px;">
           <div class="card-title">💾 資料備份</div>
-          <button class="btn-export" style="margin-bottom:8px; background:var(--water);" onclick="backupData()">📤 匯出備份檔案</button>
+          <button class="btn-export" style="margin-bottom:8px; background:var(--water);" onclick="backupData()">📤 匯出備份 (JSON)</button>
+          <button class="btn-export" style="margin-bottom:8px; background:var(--symptom);" onclick="exportCSV()">📊 匯出 Excel 表格</button>
           <button class="btn-export" style="background:var(--urine);" onclick="document.getElementById('restoreInput').click()">📥 從備份還原</button>
           <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreData(event)">
         </div>
@@ -1496,6 +1497,62 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       showToast('✅ 備份已下載，請保存好呢個檔案');
+    }
+
+    // ============================
+    // 匯出 Excel (CSV)
+    // ============================
+    async function exportCSV() {
+      const all = await getAllRecords();
+      if (all.length === 0) { showToast('未有記錄可以匯出'); return; }
+
+      const sorted = all.sort((a, b) => a.timestamp - b.timestamp);
+      const rows = [['日期', '時間', '類型', '內容', '備註']];
+
+      sorted.forEach(r => {
+        const d = r.date;
+        const t = new Date(r.timestamp);
+        const time = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+        let type = '', content = '', note = '';
+
+        if (r.type === 'water') {
+          type = '飲水';
+          content = r.cups + ' 杯';
+        } else if (r.type === 'urine') {
+          type = '排尿';
+          const secLabel = r.seconds <= 3 ? '<5秒' : r.seconds <= 8 ? '5-10秒' : r.seconds <= 15 ? '10-20秒' : '>20秒';
+          content = secLabel;
+        } else if (r.type === 'temperature') {
+          type = '體溫';
+          const periodLabel = r.period === 'morning' ? '早上' : '晚上';
+          content = periodLabel + ' ' + r.temperature.toFixed(1) + '°C';
+        } else if (r.type === 'symptom') {
+          type = '不適';
+          content = r.symptom + '（' + r.severity + '級）';
+        } else if (r.type === 'food') {
+          type = '飲食';
+          content = r.text;
+        }
+
+        rows.push([d, time, type, content, note]);
+      });
+
+      // Convert to CSV with BOM for Excel Chinese support
+      const BOM = '\uFEFF';
+      const csv = BOM + rows.map(row =>
+        row.map(cell => '"' + String(cell).replace(/"/g, '""') + '"').join(',')
+      ).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '康復日記_' + todayStr() + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('✅ Excel 表格已下載，可以用 Numbers/Excel 打開');
     }
 
     async function restoreData(event) {
