@@ -433,6 +433,16 @@
         <div id="tempWarning" style="display:none;margin-top:8px;padding:8px 12px;background:#FFF0F0;border-radius:8px;font-size:13px;color:var(--temp-warn);font-weight:500;text-align:center"></div>
       </div>
 
+      <!-- Food Card -->
+      <div class="card">
+        <div class="card-title">🍽️ 飲食記錄 <span style="font-size:12px;font-weight:400;color:var(--text-secondary)">記錄今日食過咩</span></div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="foodInput" placeholder="例：粥、饅頭、魚" style="flex:1;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:15px;outline:none;font-family:inherit;background:var(--card);color:var(--text)">
+          <button onclick="addFood()" style="padding:12px 18px;border:none;border-radius:var(--radius-sm);background:var(--primary);color:#fff;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap">➕ 記錄</button>
+        </div>
+        <div id="todayFoodList" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+
       <!-- Symptom Card -->
       <div class="card">
         <div class="card-title">🤒 不適記錄</div>
@@ -975,6 +985,47 @@
     }
 
     // ============================
+    // 飲食
+    // ============================
+    async function addFood() {
+      const input = document.getElementById('foodInput');
+      const text = input.value.trim();
+      if (!text) { showToast('請輸入食咗啲咩'); return; }
+      const r = {
+        id: now(),
+        type: 'food',
+        timestamp: now(),
+        date: todayStr(),
+        text: text
+      };
+      await addRecord(r);
+      input.value = '';
+      showToast('🍽️ 已記錄飲食');
+      refreshToday();
+    }
+
+    document.getElementById('foodInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') addFood();
+    });
+
+    function renderFood(records) {
+      const foods = records.filter(r => r.type === 'food');
+      const container = document.getElementById('todayFoodList');
+      if (foods.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+      let html = '';
+      foods.forEach(r => {
+        html += `<span style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:var(--primary-light);border-radius:20px;font-size:13px;">
+          🍽️ ${r.text}
+          <span onclick="deleteRecordById(${r.id},'today')" style="cursor:pointer;opacity:0.5;margin-left:2px">✕</span>
+        </span>`;
+      });
+      container.innerHTML = html;
+    }
+
+    // ============================
     // Quick symptom tags
     document.querySelectorAll('#symptomQuickTags .symptom-tag[data-symptom]').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -1079,6 +1130,7 @@
       renderWater(records);
       renderUrine(records);
       renderTemp(records);
+      renderFood(records);
       renderTodayTimeline(records);
     }
 
@@ -1147,6 +1199,15 @@
             <div class="tl-body">
               <div class="tl-time">${t}</div>
               <div class="tl-text" style="${tempColor}">${periodLabel} 體溫 ${r.temperature.toFixed(1)}°C</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'today')">刪除</button></div>
+            </div>
+          </div>`;
+        } else if (r.type === 'food') {
+          html += `<div class="tl-item">
+            <div class="tl-icon" style="background:var(--primary-light)">🍽️</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text">${r.text}</div>
               <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'today')">刪除</button></div>
             </div>
           </div>`;
@@ -1239,6 +1300,15 @@
             <div class="tl-body">
               <div class="tl-time">${t}</div>
               <div class="tl-text" style="${tempColor}">${periodLabel} 體溫 ${r.temperature.toFixed(1)}°C</div>
+              <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'history')">刪除</button></div>
+            </div>
+          </div>`;
+        } else if (r.type === 'food') {
+          html += `<div class="tl-item">
+            <div class="tl-icon" style="background:var(--primary-light)">🍽️</div>
+            <div class="tl-body">
+              <div class="tl-time">${t}</div>
+              <div class="tl-text">${r.text}</div>
               <div class="tl-actions"><button onclick="deleteRecordById(${r.id},'history')">刪除</button></div>
             </div>
           </div>`;
@@ -1361,6 +1431,12 @@
           const tempStr = dayTemps.map(r => (r.period === 'morning' ? '🌅' : '🌇') + r.temperature.toFixed(1) + '°C').join(' ');
           lines.push('    體溫：' + tempStr);
         }
+        // Food for this day
+        const dayFoods = items.filter(r => r.type === 'food');
+        if (dayFoods.length > 0) {
+          const foodStr = dayFoods.map(r => r.text).join('、');
+          lines.push('    飲食：' + foodStr);
+        }
         if (syms) lines.push('    不適：' + syms);
         lines.push('');
       });
@@ -1381,6 +1457,8 @@
           const periodLabel = r.period === 'morning' ? '🌅 早上' : '🌇 晚上';
           const warn = r.temperature >= 37.5 ? ' ⚠️' : '';
           lines.push('  ' + d + ' ' + t + '  🌡️ ' + periodLabel + ' ' + r.temperature.toFixed(1) + '°C' + warn);
+        } else if (r.type === 'food') {
+          lines.push('  ' + d + ' ' + t + '  🍽️ ' + r.text);
         } else if (r.type === 'symptom') lines.push('  ' + d + ' ' + t + '  🤒 ' + r.symptom + '（' + r.severity + '級）');
       });
 
